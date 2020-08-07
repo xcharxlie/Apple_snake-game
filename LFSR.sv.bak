@@ -1,0 +1,51 @@
+module LFSR(q,clk,resest);
+ output logic [9:0] q;
+ input logic clk,reset;
+ logic temp;
+ 
+ always_ff @ (posedge clk) begin
+	if(reset) begin
+		q <= 10'b0000000000;
+	end else begin
+		temp <= (~q[9]&~q[7]) | (q[9]&q[7]);
+		q[0]<= temp;
+		q[1] <= q[0];
+		q[2] <= q[1];
+		q[3] <= q[2];
+		q[4] <= q[3];
+		q[5] <= q[4];
+		q[6] <= q[5];
+		q[7] <= q[6];
+		q[8] <= q[7];
+		q[9] <= q[8];
+	end
+ end
+
+endmodule 
+
+module LFSR_testbench();
+logic clk,reset;
+logic [9:0] q;
+
+LFSR lfsr (.q,.clk,.reset);
+
+  initial begin
+							@(posedge clk);
+  Reset <= 1; 			@(posedge clk);
+  Reset <= 0;  @(posedge clk);
+	                  @(posedge clk);
+              @(posedge clk);
+                     @(posedge clk);
+				   @(posedge clk);
+							@(posedge clk);
+				   @(posedge clk);
+							@(posedge clk);
+							@(posedge clk);
+				  @(posedge clk);
+							@(posedge clk);
+  Reset <= 1;        @(posedge clk);			
+							@(posedge clk);
+							
+  $stop; // End the simulation.
+ end
+endmodule

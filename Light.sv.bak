@@ -1,0 +1,197 @@
+
+//two modules that take two inputs and previous conditions 
+//to change lights based on FSM
+module Light (Clock, Reset, UP, DW,L, R, NL, NR,NU,ND,lightOn, x, y,Applex,Appley,lenth,eaten);
+	input logic Clock, Reset;
+	input logic [8:0]lenth;
+	input logic [15:0]x,y;
+	input logic [15:0] Applex,Appley;
+	//00 head, 01,tail, 10 apple, 11 none
+	//1:green 0:red
+	input logic L, R, NL, NR, UP,DW,NU,ND;
+	output logic lightOn;
+	output logic color;
+	output logic eaten;
+	logic [8:0] size;
+	enum {head,tail,apple,none} pss,nss;
+	//enum {green, red}pc,nc;
+	//next stage logic
+	
+	//always_comb begin
+	 //if(part == 2'b00)
+			//pss <= head;
+	 //else if(part == 2'b01)
+			//pss <= tail;
+	 //else if(part == 2'b10)
+		//	pss <= apple;
+	 //else 
+		//	pss <= none;
+	//end
+	
+	
+	//on -> on
+	//always_comb begin
+	 //if(ps == on)begin
+	  //case(part)
+	   //2'b00: ns = on; nss = body; //nc = green;
+	   //2'b01: ns = on; //nc = green;// set it is the tail or not? 
+		//2'b10: if(eaten) ns = on; nss = tail;// nc = green;
+		  //     else ns = off; nss = none; 
+	   //2'b11: if(color & ((NR&L&~R&~UP&~DW)|(NL&~L&R&~UP&~DW)|(NU&~L&~R&~UP&DW)|(ND&~L&~R&UP&~DW)))  nss = head;ns = on; color = 1'b0;eaten = 1'b1; apple_producer();//nc = green;
+		  //     else if(color) ns = on; nss = none;
+			//	 else ns = off; nss = none;
+	  //endcase
+	 //end else begin
+	   //if((NR&L&~R&~UP&~DW)|(NL&~L&R&~UP&~DW)|(NU&~L&~R&~UP&DW)|(ND&~L&~R&UP&~DW)) ns = on;nss=head;
+		//else  ns = off;nss=none;
+	 //end
+	 //apple situation is excluded
+	   
+	//end
+	
+	//always_comb begin
+	 //if(color & ((NR&L&~R&~UP&~DW)|(NL&~L&R&~UP&~DW)|(NU&~L&~R&~UP&DW)|(ND&~L&~R&UP&~DW)))
+	   //color = ~color;
+		//part =2'b00;
+		//ns = on;
+	 //else if(color )
+	 always_comb begin
+	 eaten = 1'b0;
+	  case(pss)
+	   apple : if((NR&L&~R&~UP&~DW)|(NL&~L&R&~UP&~DW)|(NU&~L&~R&~UP&DW)|(ND&~L&~R&UP&~DW)) 
+		        nss = head; 
+		        eaten = 1'b1;
+				  else  nss = apple;
+		head :  if (UP|DW|L|R) nss = tail;
+				  else  nss = none;
+		tail : if ( eaten)   nss = tail;
+				 else if(size>1'b1) nss = tail;
+				 else  nss = none;
+				 //else if()
+	   none :if(x == Applex & y == Appley) nss = apple; 
+		      else if((NR&L&~R&~UP&~DW)|(NL&~L&R&~UP&~DW)|(NU&~L&~R&~UP&DW)|(ND&~L&~R&UP&~DW)) nss = head;
+				else nss = none;
+		endcase
+	end
+	
+	
+
+	
+	 
+	 
+	 always_ff @(posedge Clock) begin
+	  if(pss == head & ((NR&~L&R&~UP&~DW&~(x==Applex-1'b1&y==Appley))|(NL&L&~R&~UP&~DW&~(x==Applex+1'b1&y==Appley))|(NU&~L&~R&UP&~DW&~(x==Apple&y==Appley-1'b1))|(ND&~L&~R&~UP&DW&~(x==Apple&y==Appley+1'b1))))
+	    stop = 1'b1;
+		// HEX0[6:0] = 7'b1011110;
+		 //HEX1[6:0] = 7'b
+		 //HEX2[6:0] = 
+	 end
+always_ff @(posedge Clock) begin
+  if (pss == head) begin
+	 size <= lenth;
+  end else if(eaten) begin
+    size <= size;
+  end else begin
+    size <= size-1;
+  end
+  
+  
+ end
+	// off -> on
+ 
+	//always_comb begin
+	
+		//case(ps)
+			//on: if((L&~R&~UP&~DW)|(~L&R&~UP&~DW)|(~L&~R&UP&~DW)|(~L&~R&~UP&DW)) ns = off;
+				//else ns = on;
+			//off: if((NR&L&~R&~UP&~DW)|(NL&~L&R&~UP&~DW)|(NU&~L&~R&~UP&DW)|(ND&~L&~R&UP&~DW)) ns = on;
+				//else ns = off;
+		
+		//endcase
+	//end
+	
+	
+	//assign lightOn = (L&&~R&&~NL&&NR)||(~L&&R&&NL&&~NR)||((ns==B)&&~L&&~R&&~NL&&~NR);
+ //end	
+   assign lightOn = (pss==(head|tail|apple)); 
+	//assign color = (pss ==(head|tail));
+	always_ff@(posedge Clock) begin
+		if(Reset) begin
+		   stop = 1'b0;
+			if(x == 16'b0000000001000000 & y == 16'b0000000001000000) begin
+			 nss <= head;
+			 
+			end else if(x == 16'b0000000001000000 & (y == 16'b0000000000100000 | y == 16'b0000000000010000))begin
+			 nss <= tail;
+			 
+			end else begin
+			 nss <= none;
+			end
+			 
+		end else if(stop)begin
+		   pss<=pss;
+		
+		end else begin
+			
+			pss <= nss;
+		end
+	end
+	
+	
+	 
+	 
+endmodule
+
+//module Light_testbench();
+//	logic Clock, Reset;
+//	logic L, R, NL, NR,UP,DW,NU,ND;
+//	logic lightOn;
+//	logic [8:0] lenth;
+//	logic eaten;
+//	logic [15:0]x,y,Applex,Appley;
+//	centerLight dut (Clock, Reset, UP, DW,L, R, NL, NR,NU,ND,lightOn,x,y,Applex,Appley,lenth,eaten);
+//	 
+//	 // Set up the clock.
+//	 parameter CLOCK_PERIOD=100;
+//	 initial begin
+//		 Clock <= 0;
+//		 forever #(CLOCK_PERIOD/2) Clock <= ~Clock;
+//	 end
+//	 
+//	 // Set up the inputs to the design. Each line is a clock cycle.
+//	 initial begin
+//		 @(posedge Clock);
+//		 Reset <= 1; @(posedge Clock);
+//		 Reset <= 0; L <= 0; R <= 0; UP <= 0; DW <= 0; ND<=0;NU<=0;NL <= 0; NR <= 0;@(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 
+//
+//						 L <= 1; R <= 0; NL <= 0; NR <= 1; @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//						L <= 0; R <= 1; NL <= 1; NR <= 0; @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 
+//		 L <= 0; R <= 0; UP <= 1; DW <= 0; ND<=1;NU<=0;NL <= 0; NR <= 0; @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 L <= 0; R <= 0; UP <= 0; DW <= 1; ND<=0;NU<=1;NL <= 0; NR <= 0;
+//		  @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 $stop; // End the simulation.
+//	 end
+//endmodule
+
