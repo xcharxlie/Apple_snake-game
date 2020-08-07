@@ -1,0 +1,95 @@
+module apple (Clock,Reset,eaten,Applex,Appley,led);
+ //if the game needs a new apple?
+ input logic Clock,Reset;
+ output logic [15:0] Applex,Appley ;
+ input logic eaten;
+ input logic[15:0][15:0]led;
+ logic [7:0] q;
+ logic [15:0] a,b;
+ enum {pro, nop} ns, ps;
+ //output logic led;
+ 
+ LFSR l(.q,.clk(Clock),.RE(Reset));
+ encoder e1(.out(a),.in(q[3:0]));
+ encoder e2(.out(b),.in(q[7:4]));
+ 
+ 
+ always_comb begin
+  case(ps)
+   nop: if(~eaten) ns = nop;
+	     else ns = pro;
+	pro: if(led[a][b]) ns = pro;
+	     else ns = nop;
+  endcase
+ 
+ end
+ 
+ 
+ 
+ always_ff @(posedge Clock) begin
+  if(Reset) begin
+     ps <= nop;
+	 Applex <= 15'b000001000000000;
+	 Appley <= 15'b000001000000000;
+  end else if(ns == nop & ps == pro)begin
+    Applex <= a; 
+	 Appley <= b;
+  end else begin
+    ps <= ns;
+	 Applex<=Applex;
+	 Appley <= Appley;
+  end
+ end
+  
+   //if()apple is overlapped with snake itself, choose another place.
+	
+  //Firstly, arbitarily set the apple at a certain point.
+endmodule
+
+
+module apple_testbench();
+ logic Clock,Reset,eaten;
+ logic [15:0]Applex,Appley;
+ logic [15:0][15:0] led;
+ 
+ apple_producer dut (.Clock,.Reset,.eaten,.Applex,.Appley,.led);
+ parameter CLOCK_PERIOD=100;
+	 initial begin
+		 Clock <= 0;
+		 forever #(CLOCK_PERIOD/2) Clock <= ~Clock;
+	 end
+	 
+	 initial begin
+		 @(posedge Clock);
+		 Reset <= 1; led[5][6] = 1'b1; @(posedge Clock);
+		 Reset <= 0;eaten<=1'b0;@(posedge Clock);
+		 @(posedge Clock);
+		 eaten<=1'b1; led[5][6] <= 1'b0; led[7][12] <= 1'b1;@(posedge Clock);
+		 @(posedge Clock);		 
+
+		eaten<=1'b0;@(posedge Clock);
+		 eaten<=1'b1;led[7][12]<=1'b0;led[5][6] <= 1'b1;@(posedge Clock);
+		 @(posedge Clock);
+		 @(posedge Clock);
+		 @(posedge Clock);
+		 @(posedge Clock);
+		eaten<=1'b0; @(posedge Clock);
+		eaten <=1'b1; @(posedge Clock);
+		 @(posedge Clock);
+		 eaten<=1'b0;@(posedge Clock);
+		 eaten<=1'b1;led[5][6]<=1'b0;led[3][3]<=1'b1;@(posedge Clock);
+    	 eaten<=1'b0;@(posedge Clock);
+		 
+		 eaten<=1'b1;@(posedge Clock);
+	 @(posedge Clock);
+		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 L <= 0; R <= 0; UP <= 0; DW <= 1; ND<=0;NU<=1;NL <= 0; NR <= 0;
+//		  @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+//		 @(posedge Clock);
+	  $stop; // End the simulation.
+	 end
+endmodule

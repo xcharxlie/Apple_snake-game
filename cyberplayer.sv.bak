@@ -1,0 +1,18 @@
+module cyberplayer (Left,clk,reset,SW);
+ output logic Left;
+ input logic clk, reset;
+ input logic [8:0]SW;
+ logic [9:0]q, [9:0]temp;
+ logic result;
+ 
+ 
+ assign temp = 9'b0000000 + [8:0]SW;
+ LFSR l (.q,.clk,.reset);
+ 
+ comparator c1 (temp,q,result);
+ 
+ always_ff @(posedge clk) begin
+	if(result)
+		Left<= 1'b1;
+	else 
+		Left 

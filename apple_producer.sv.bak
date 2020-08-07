@@ -1,0 +1,4 @@
+module apple_producer ();
+ //if the game needs a new apple?
+ input logic apple; 
+ output logic led;

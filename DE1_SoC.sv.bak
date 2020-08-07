@@ -1,0 +1,138 @@
+//module will be loaded into FPGA
+//takes HEX display, KEY, leds and switches as input
+//uses KEY 0,3 as two inputs and SW9 as reset
+//When game ends HEX is displayed
+module DE1_SoC (CLOCK_50, HEX0, HEX1, HEX2, HEX3, HEX4, HEX5, KEY,LEDR, SW);
+	input logic CLOCK_50; // 50MHz clock.
+	output logic [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5;
+	output logic [9:0] LEDR;
+	input logic [3:0] KEY; // True when not pressed, False when pressed
+	input logic [9:0] SW;
+	logic [31:0]clk;
+
+	logic Reset, Right, R, RE,result1;
+	//p1 
+	logic [2:0] p1,p2; 
+	logic [1:0] winner;
+	
+	 //assign Reset = SW[9];
+	  
+	
+	assign		Right = ~KEY[0];
+	
+	
+	clock_divider cdiv (.clock(CLOCK_50), .divided_clocks(clk));
+	
+	assign RE = ~KEY[2];
+	
+//	initial begin
+//	Reset = 1'b0;
+//	end
+	
+	
+	parameter whichClock = 15;
+
+	cyberplayer TERMINATER (.result1,.clk(CLOCK_50),.SW(SW[8:0]),.RE);
+	
+	Userinput a (.Reset(Reset|RE), .Right, .Clock(CLOCK_50), .R);
+
+	playfield s (.Clock(CLOCK_50), .Reset, .L(result1), .R, .led(LEDR), .winner,.RE);
+	
+	counters coun (.winner, .p1, .p2,.clk(CLOCK_50),.RESET(RE));
+	seg S1(.bcd(p1),.leds(HEX0));
+	seg S2(.bcd(p2),.leds(HEX5));
+	
+	
+
+	
+endmodule
+	
+	// divided_clocks[0] = 25MHz, [1] = 12.5Mhz, ...
+	// [23] = 3Hz, [24] = 1.5Hz, [25] = 0.75Hz, ...
+module clock_divider (clock, divided_clocks);
+	 input logic clock;
+	 output logic [31:0] divided_clocks;
+	 
+	 always_ff @(posedge clock) begin
+		 divided_clocks <= divided_clocks + 1;
+	 end
+endmodule
+
+
+module DE1_SoC_testbench ();
+
+	 logic Clock; // 50MHz clock.
+	 logic [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5;
+	 logic [9:0] LEDR;
+	 logic [3:0] KEY; // True when not pressed, False when pressed
+	 logic [9:0] SW;
+	 
+		 // Set up the clock.
+	 parameter CLOCK_PERIOD=100;
+	 initial begin
+		 Clock <= 0;
+		 forever #(CLOCK_PERIOD/2) Clock <= ~Clock;
+	 end
+	 
+	 DE1_SoC dut (.CLOCK_50(Clock), .HEX0, .HEX1, .HEX2, .HEX3, .HEX4, .HEX5, .KEY, .LEDR, .SW);
+
+	 // Set up the inputs to the design. Each line is a clock cycle.
+	 initial begin
+		 KEY[3:0]<=4'b1011; @(posedge Clock);
+		 KEY[3:0]<=4'b1111;  @(posedge Clock);
+		 SW<= 10'b1000000000; @(posedge Clock);
+		 SW<= 10'b1000000001;  @(posedge Clock);
+		 @(posedge Clock);
+		SW<= 10'b0000100000; @(posedge Clock);
+		SW<= 10'b0000100001; @(posedge Clock);
+		 
+        KEY[0] <= 0;@(posedge Clock);
+		 KEY[0] <= 1;@(posedge Clock);
+		 KEY[0] <= 0;@(posedge Clock);
+		 KEY[0] <= 1;@(posedge Clock);
+		 SW<= 10'b0000010010;@(posedge Clock);
+		 SW<= 10'b0000010001;@(posedge Clock);
+
+			SW<= 10'b0100000000;KEY[0] <= 0;  @(posedge Clock);
+		 SW<= 10'b0000100000;KEY[0] <= 1;@(posedge Clock);
+		 KEY[0] <= 0;@(posedge Clock);
+		 KEY[0] <= 1;@(posedge Clock);
+
+		 SW<= 10'b0000100000;@(posedge Clock);
+			//KEY[0] <= 1;  @(posedge Clock);
+		 //KEY[0] <= 0;@(posedge Clock);
+		    SW<= 10'b0000001000;         @(posedge Clock);
+		 //KEY[0] <= 1;@(posedge Clock);
+
+		 //KEY[0] <= 0;@(posedge Clock);
+		 KEY[0] <= 0;@(posedge Clock);
+		  KEY[0] <= 1;@(posedge Clock);
+		  @(posedge Clock);
+		  @(posedge Clock);
+		 //KEY[0] <= 1;@(posedge Clock);
+		 //KEY[0] <= 0;@(posedge Clock);
+		 //KEY[0] <= 1;@(posedge Clock);
+		 SW<= 10'b0100000000; @(posedge Clock);
+		 @(posedge Clock);
+		 @(posedge Clock);
+		 KEY[0] <= 0;@(posedge Clock);
+		 KEY[0] <= 1;@(posedge Clock);
+		 KEY[0] <= 0;@(posedge Clock);
+		 @(posedge Clock);
+		 
+		 SW<= 10'b0000001000;@(posedge Clock);
+		 SW<= 10'b0100000000;@(posedge Clock);
+		 SW<= 10'b1000000000;@(posedge Clock);
+		
+		 KEY[2] <= 0;  @(posedge Clock);
+		 @(posedge Clock);
+		 @(posedge Clock);
+		 @(posedge Clock);
+		 @(posedge Clock);
+		 
+
+
+		 $stop; // End the simulation.
+	 end
+	 
+endmodule
